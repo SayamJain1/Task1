@@ -2,8 +2,6 @@ import * as React from "react";
 import {
   Container,
   Box,
-  TextField,
-  Typography,
   Button,
   Stepper,
   Step,
@@ -11,18 +9,35 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import Contact from "./Components/Contact";
-// import { flexbox } from "@mui/system";
+import InfoPage from "./Components/InfoPage";
+import OtpPage from "./Components/OtpPage";
+import ModalSubmit from "./Components/ModalSubmit";
 
 const steps = ["Information", "Contact", "Varification"];
 
+type FormData = { userName: string; age: number; email: string; phone: number };
+
 export default function MyApp() {
   const [activeStep, setActiveStep] = React.useState(0);
-  const [completed, setCompleted] = React.useState<{
+  const [completed] = React.useState<{
     [k: number]: boolean;
   }>({});
 
-  const [userName, setUserName] = useState<string>("");
-  const [age, setAge] = useState<number>(0);
+  const [formData, setFormData] = useState<FormData>({
+    userName: "",
+    age: 0,
+    email: "",
+    phone: 0,
+  });
+
+  const [checked, setChecked] = useState<boolean>(false);
+  const [checkOtp, setCheckOtp] = useState<boolean>(true);
+  const [open, setOpen] = useState<boolean>(false);
+
+  // checkbox
+  const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setChecked(event.target.checked);
+  };
 
   const totalSteps = () => {
     return steps.length;
@@ -42,11 +57,7 @@ export default function MyApp() {
 
   const handleNext = () => {
     const newActiveStep =
-      isLastStep() && !allStepsCompleted()
-        ? // It's the last step, but not all steps have been completed,
-          // find the first step that has been completed
-          steps.findIndex((step, i) => !(i in completed))
-        : activeStep + 1;
+      isLastStep() && !allStepsCompleted() ? 0 : activeStep + 1;
     setActiveStep(newActiveStep);
   };
 
@@ -58,16 +69,10 @@ export default function MyApp() {
     setActiveStep(step);
   };
 
-  const handleComplete = () => {
-    const newCompleted = completed;
-    newCompleted[activeStep] = true;
-    setCompleted(newCompleted);
-    handleNext();
-  };
-
-  const handleReset = () => {
+  const handleFirstStep = () => {
     setActiveStep(0);
-    setCompleted({});
+    setOpen(false);
+    setFormData({ userName: "", age: 0, email: "", phone: 0 });
   };
 
   return (
@@ -87,97 +92,74 @@ export default function MyApp() {
             ))}
           </Stepper>
 
-          {/* ///////////////////// */}
-          {/* <div> */}
-          {allStepsCompleted() ? (
-            <>
-              <Typography sx={{ mt: 2, mb: 1 }}>
-                All steps completed - you&apos;re finished
-              </Typography>
-              <Box sx={{ display: "flex", flexDirection: "row", pt: 2 }}>
-                <Box sx={{ flex: "1 1 auto" }} />
-                <Button onClick={handleReset}>Reset</Button>
-              </Box>
-            </>
-          ) : (
-            <>
-              {/* <Typography sx={{ mt: 2, mb: 1, py: 1 }}>
-                  Step {activeStep + 1}
-                </Typography> */}
+          <>
+            {activeStep === 0 && (
+              <InfoPage
+                handleNext={handleNext}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {activeStep === 1 && (
+              <Contact
+                handleBack={handleBack}
+                handleNext={handleNext}
+                checked={checked}
+                handleChange={handleChange}
+                formData={formData}
+                setFormData={setFormData}
+              />
+            )}
+            {activeStep === 2 && (
+              <OtpPage
+                handleBack={handleBack}
+                setOpen={setOpen}
+                checkOtp={checkOtp}
+                setCheckOtp={setCheckOtp}
+              />
+            )}
+            {/* {activeStep === 3 && <ModalSubmit />} */}
 
-              {activeStep === 0 && (
-                <Contact />
-                // <>
-                //   <Typography variant="h5">Personal Information</Typography>
-                //   <Typography
-                //     variant="subtitle2"
-                //     className="text-gray-400 text-center"
-                //   >
-                //     Please enter your Username and Age information{" "}
-                //   </Typography>
-                //   <TextField
-                //     error={userName.length > 20}
-                //     type="text"
-                //     // helperText="Username should be less then 20 characters."
-                //     id="outlined-basic"
-                //     label="Username"
-                //     variant="outlined"
-                //     value={userName}
-                //     onChange={(e) => setUserName(e.target.value)}
-                //   />
-                //   <TextField
-                //     type="number"
-                //     id="outlined-basic"
-                //     label="Age"
-                //     variant="outlined"
-                //     value={age}
-                //     onChange={(e) => setAge(Number(e.target.value))}
-                //   />
-                // </>
-              )}
+            {/* Modal */}
+            {open && (
+              <ModalSubmit
+                open={open}
+                setOpen={setOpen}
+                formData={formData}
+                handleFirstStep={handleFirstStep}
+              />
+            )}
 
-              <Box sx={{ display: "flex", flexDirection: "row", pt: 2 }}>
+            <Box sx={{ display: "flex", flexDirection: "row", pt: 2 }}>
+              <Button
+                color="inherit"
+                disabled={activeStep === 0}
+                onClick={handleBack}
+                sx={{ mr: 1 }}
+              >
+                Back
+              </Button>
+              <Box sx={{ flex: "1 1 auto" }} />
+
+              {activeStep !== 2 ? (
                 <Button
-                  color="inherit"
-                  disabled={activeStep === 0}
-                  onClick={handleBack}
+                  onClick={handleNext}
                   sx={{ mr: 1 }}
+                  disabled={activeStep === 1 && !checked ? true : null}
                 >
-                  Back
-                </Button>
-                <Box sx={{ flex: "1 1 auto" }} />
-                <Button onClick={handleNext} sx={{ mr: 1 }}>
                   Next
                 </Button>
-                {activeStep !== steps.length &&
-                  (completed[activeStep] ? (
-                    <Typography
-                      variant="caption"
-                      sx={{ display: "inline-block" }}
-                    >
-                      Step {activeStep + 1} already completed
-                    </Typography>
-                  ) : (
-                    <Button onClick={handleComplete}>
-                      {completedSteps() === totalSteps() - 1
-                        ? "Finish"
-                        : "Complete Step"}
-                    </Button>
-                  ))}
-              </Box>
-            </>
-          )}
-          {/* </div> */}
-          {/* ///////////////////// */}
-
-          {/* <Button
-            onClick={() => {
-              alert(`name is ${userName} and age is ${age}`);
-            }}
-            variant="contained"
-          >
-            Continue
-          </Button> */}
+              ) : (
+                <Button
+                  onClick={() => setOpen(true)}
+                  sx={{ mr: 1 }}
+                  disabled={activeStep === 2 ? checkOtp : false}
+                >
+                  Submit
+                </Button>
+              )}
+            </Box>
+          </>
         </Box>
       </Container>
     </div>
